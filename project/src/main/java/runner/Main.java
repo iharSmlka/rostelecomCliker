@@ -13,7 +13,7 @@ public class Main {
         Agent agent = new AgentImpl();
         Thread agentThread = new Thread(agent);
         List<String> tasks = new ArrayList<>();
-        tasks.add("79910946039");
+        tasks.add("79932391380");
         List<Agent> agents = new ArrayList<>();
         agents.add(agent);
         TaskDispatcher.getInstance().addTasks(tasks, agents);

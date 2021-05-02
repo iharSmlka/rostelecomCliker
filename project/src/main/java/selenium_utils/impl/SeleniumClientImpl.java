@@ -1,9 +1,6 @@
 package selenium_utils.impl;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import selenium_utils.SeleniumClient;
 
@@ -93,11 +90,11 @@ public class SeleniumClientImpl implements SeleniumClient {
     }
 
     public WebElement getElementFromFocus(By by) {
-        return focus.findElement(by);
+        return focus != null ? focus.findElement(by) : driver.findElement(by);
     }
 
     public List<WebElement> getElementsFromFocus(By by) {
-        return focus.findElements(by);
+        return focus != null ? focus.findElements(by) : driver.findElements(by);
     }
 
     @Override
