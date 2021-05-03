@@ -22,7 +22,7 @@ public class AgentImpl implements Agent {
     private String login = "596007198779";
     private String password = "Jean273273";
     private SeleniumClient seleniumClient;
-    private TaskDispatcher taskDispatcher = TaskDispatcher.getInstance();
+    private final TaskDispatcher taskDispatcher = TaskDispatcher.getInstance();
 
     public AgentImpl() { }
 
@@ -55,30 +55,57 @@ public class AgentImpl implements Agent {
     }
 
     private void changeNumbersCycle(SeleniumClient seleniumClient) {
-        focusOnTableOnServicesPage(seleniumClient);
+        seleniumClient
+                .focus(By.name("serv_tab"))
+                .focus(By.name("connected_services"))
+                .focus(By.name("rtk-datagrid"))
+                .focus(By.id("vgt-table"));
         List<WebElement> rows;
-        int rowInd = 0;
+        int iterCount = 0;
         do {
             rows = seleniumClient.getElementsFromFocus(By.className("list-of-services__ListOfServices__active"));
-            if (rowInd >= rows.size()) {
+            if (iterCount >= rows.size()) {
                 break;
             }
-            WebElement row = rows.get(rowInd);
-            String number = StringUtils.getOnlyNumbs(SeleniumUtils.getWebElementText(row));
-            if (taskDispatcher.isForChangeTask(id, number)) {
+            WebElement row = rows.stream().filter(
+                    r -> taskDispatcher.isForChangeTask(id, StringUtils.getOnlyNumbs(SeleniumUtils.getWebElementText(r))))
+                    .findAny()
+                    .orElse(null);
+            if (row != null) {
+                String number = StringUtils.getOnlyNumbs(SeleniumUtils.getWebElementText(row));
                 choosePhoneRow(row, seleniumClient);
                 goToServiceManagementWindow(seleniumClient);
                 goToChangeNumberMenu(seleniumClient);
-                System.out.println(chooseNumberAndSubmit(seleniumClient, null));
-                if (changeIsSuccessful(seleniumClient)) {
-                    taskDispatcher.completeTaskForChange(id, number);
+                if (taskDispatcher.isChangeToMode()) {
+                    boolean isChangeError = false;
+                    do {
+                        String numberToChange = taskDispatcher.getTaskToChange(id);
+                        if (numberToChange == null) {
+                            break;
+                        }
+                        setLastFourSymbolsFromTaskToChange(seleniumClient, numberToChange);
+                        String changed = chooseNumberAndSubmit(seleniumClient, numberToChange);
+                        if (changed == null || !checkChangeIsSuccessfulAndCloseWindows(seleniumClient)) {
+                            System.err.println("un-success");
+                            isChangeError = true;
+                        } else {
+                            taskDispatcher.addToChangelog(number, changed);
+                        }
+                        taskDispatcher.closeTaskToChange(id, numberToChange);
+                    } while (isChangeError);
+                } else {
+                    String changed = chooseNumberAndSubmit(seleniumClient, null);
+                    if (checkChangeIsSuccessfulAndCloseWindows(seleniumClient)) {
+                        taskDispatcher.addToChangelog(number, changed);
+                    }
                 }
                 closeChangeNumberMenu(seleniumClient);
                 closeServiceManagementWindow(seleniumClient);
                 backToServicesPage(seleniumClient);
+                taskDispatcher.closeTaskForChange(id, number);
             }
-            rowInd++;
-        } while (rowInd < rows.size());
+            iterCount++;
+        } while (iterCount < rows.size());
     }
 
     private void backToServicesPage(SeleniumClient seleniumClient) {
@@ -122,7 +149,7 @@ public class AgentImpl implements Agent {
                 .unFocus();
     }
 
-    private boolean changeIsSuccessful(SeleniumClient seleniumClient) {
+    private boolean checkChangeIsSuccessfulAndCloseWindows(SeleniumClient seleniumClient) {
         try {
             WebElement notifyDialogBox = seleniumClient
                     .getElementsFromFocus(By.className("uni-DialogBox"))
@@ -150,6 +177,29 @@ public class AgentImpl implements Agent {
         } finally {
             seleniumClient.unFocus();
         }
+    }
+
+    private void setLastFourSymbolsFromTaskToChange(SeleniumClient seleniumClient, String taskToChange) {
+        String last4Symbols = StringUtils.getLastFourNumbs(taskToChange);
+        List<WebElement> inputDivList = seleniumClient
+                .getElementsFromFocus(By.className("phone_end"));
+        for (WebElement inputDiv : inputDivList) {
+            WebElement input = seleniumClient
+                    .focus(inputDiv)
+                    .getElementFromFocus(By.tagName("input"));
+            int index = Integer.parseInt(input.getAttribute("tabindex"));
+            seleniumClient
+                    .focus(input)
+                    .clearFocus()
+                    .sendKeysToFocus(String.valueOf(last4Symbols.charAt(index - 1)))
+                    .sleepSecs(1);
+        }
+        seleniumClient.unFocus();
+        seleniumClient
+                .focus(By.name("find_btn"))
+                .clickOnFocus();
+        seleniumClient.sleepSecs(10);
+        seleniumClient.unFocus();
     }
 
     private String chooseNumberAndSubmit(SeleniumClient seleniumClient, String required) {
@@ -266,14 +316,6 @@ public class AgentImpl implements Agent {
             }
         }
         seleniumClient.unFocus();
-    }
-
-    private void focusOnTableOnServicesPage(SeleniumClient seleniumClient) {
-        seleniumClient
-                .focus(By.name("serv_tab"))
-                .focus(By.name("connected_services"))
-                .focus(By.name("rtk-datagrid"))
-                .focus(By.id("vgt-table"));
     }
 
     private void goToServices(SeleniumClient seleniumClient) {

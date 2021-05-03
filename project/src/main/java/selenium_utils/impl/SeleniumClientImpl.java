@@ -85,6 +85,15 @@ public class SeleniumClientImpl implements SeleniumClient {
         return this;
     }
 
+    @Override
+    public SeleniumClient clearFocus() {
+        if (focus == null) {
+            throw new IllegalStateException("Невозможно убрать строку: фокуса нет");
+        }
+        focus.clear();
+        return this;
+    }
+
     public WebElement getFocus() {
         return focus;
     }

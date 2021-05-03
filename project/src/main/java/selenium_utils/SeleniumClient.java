@@ -16,6 +16,7 @@ public interface SeleniumClient {
     SeleniumClient clickOnFocus();
     SeleniumClient sleepSecs(int sec);
     SeleniumClient sendKeysToFocus(String keys);
+    SeleniumClient clearFocus();
     WebElement getFocus();
     WebElement getElementFromFocus(By by);
     List<WebElement> getElementsFromFocus(By by);

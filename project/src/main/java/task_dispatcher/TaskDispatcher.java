@@ -12,8 +12,10 @@ public class TaskDispatcher {
     private static final TaskDispatcher instance = new TaskDispatcher();
     private Map<Long, Set<String>> forChangeTasks = new HashMap<>();
     private Map<Long, Set<String>> toChangeTasks = new HashMap<>();
+    private Map<String, String> changelog = new HashMap<>();
     private final Lock getTaskForChangeLock = new ReentrantLock();
     private final Lock getTaskToChangeLock = new ReentrantLock();
+    private boolean changeToMode = false;
     private Integer partSize = 0;
 
     private TaskDispatcher() {}
@@ -23,10 +25,19 @@ public class TaskDispatcher {
     }
 
     public void addTasks(List<String> tasks, List<Agent> agents) {
+        changeToMode = false;
+        clearTasks();
         forChangeTasks = distribute(agents.stream().map(Agent::getId).collect(Collectors.toList()), tasks);
     }
 
-    public void completeTaskForChange(Long id, String task) {
+    public void addTasks(List<String> tasksForChange, List<String> tasksToChange, List<Agent> agents) {
+        changeToMode = true;
+        clearTasks();
+        forChangeTasks = distribute(agents.stream().map(Agent::getId).collect(Collectors.toList()), tasksForChange);
+        toChangeTasks = distribute(agents.stream().map(Agent::getId).collect(Collectors.toList()), tasksToChange);
+    }
+
+    public void closeTaskForChange(Long id, String task) {
         getTaskForChangeLock.lock();
         forChangeTasks.get(id).remove(task);
         if (forChangeTasks.isEmpty()) {
@@ -35,7 +46,7 @@ public class TaskDispatcher {
         getTaskForChangeLock.unlock();
     }
 
-    public void completeTaskToChange(Long id, String task) {
+    public void closeTaskToChange(Long id, String task) {
         getTaskToChangeLock.lock();
         toChangeTasks.get(id).remove(task);
         if (toChangeTasks.isEmpty()) {
@@ -48,14 +59,19 @@ public class TaskDispatcher {
         return forChangeTasks.get(id).contains(value);
     }
 
-    public boolean isToChangeTask(Long id, String value) {
-        return toChangeTasks.get(id).contains(value);
+    public boolean isChangeToMode() {
+        return changeToMode;
+    }
+
+    public void addToChangelog(String from, String to) {
+        changelog.put(from, to);
+    }
+
+    public String getTaskToChange(Long id) {
+        return toChangeTasks.get(id).stream().findFirst().orElse(null);
     }
 
     private void reDistributeFor(Long id, Map<Long, Set<String>> map) {
-        if (map.keySet().size() <= 1) {
-            return;
-        }
         int currentLoad = map.values().stream().map(Set::size).reduce(Integer::sum).orElse(0);
         if (currentLoad == 0) {
             return;
@@ -65,9 +81,12 @@ public class TaskDispatcher {
             if (idInMap.equals(id)) {
                 continue;
             }
-            Set<String> part = map.get(idInMap).stream().limit(toFetchSize).collect(Collectors.toSet());
-            map.get(id).addAll(part);
-            map.get(idInMap).removeAll(part);
+            int limit = toFetchSize == map.get(idInMap).size() ? toFetchSize - 1 : toFetchSize;
+            Set<String> part = map.get(idInMap).stream().limit(limit).collect(Collectors.toSet());
+            if (!part.isEmpty()) {
+                map.get(id).addAll(part);
+                map.get(idInMap).removeAll(part);
+            }
         }
     }
 
@@ -94,6 +113,7 @@ public class TaskDispatcher {
     private void clearTasks() {
         forChangeTasks.clear();
         toChangeTasks.clear();
+        changelog.clear();
         partSize = 0;
     }
 }

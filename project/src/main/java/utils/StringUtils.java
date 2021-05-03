@@ -14,4 +14,14 @@ public class StringUtils {
         }
         return builder.toString();
     }
+
+    public static String getLastFourNumbs(String string) {
+        if (string == null) {
+            return null;
+        }
+        if (string.length() <= 4) {
+            return string;
+        }
+        return string.substring(string.length() - 4);
+    }
 }
