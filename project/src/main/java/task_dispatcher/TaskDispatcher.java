@@ -40,7 +40,7 @@ public class TaskDispatcher {
     public void closeTaskForChange(Long id, String task) {
         getTaskForChangeLock.lock();
         forChangeTasks.get(id).remove(task);
-        if (forChangeTasks.isEmpty()) {
+        if (forChangeTasks.get(id).isEmpty()) {
             reDistributeFor(id, forChangeTasks);
         }
         getTaskForChangeLock.unlock();
@@ -49,7 +49,7 @@ public class TaskDispatcher {
     public void closeTaskToChange(Long id, String task) {
         getTaskToChangeLock.lock();
         toChangeTasks.get(id).remove(task);
-        if (toChangeTasks.isEmpty()) {
+        if (toChangeTasks.get(id).isEmpty()) {
             reDistributeFor(id, toChangeTasks);
         }
         getTaskToChangeLock.unlock();
@@ -71,17 +71,20 @@ public class TaskDispatcher {
         return toChangeTasks.get(id).stream().findFirst().orElse(null);
     }
 
+    public String getTaskForChange(Long id) {
+        return forChangeTasks.get(id).stream().findFirst().orElse(null);
+    }
+
     private void reDistributeFor(Long id, Map<Long, Set<String>> map) {
         int currentLoad = map.values().stream().map(Set::size).reduce(Integer::sum).orElse(0);
         if (currentLoad == 0) {
             return;
         }
-        int toFetchSize = (currentLoad / map.keySet().size()-1) / partSize;
         for (Long idInMap : map.keySet()) {
             if (idInMap.equals(id)) {
                 continue;
             }
-            int limit = toFetchSize == map.get(idInMap).size() ? toFetchSize - 1 : toFetchSize;
+            int limit = map.get(idInMap).size() / 4;
             Set<String> part = map.get(idInMap).stream().limit(limit).collect(Collectors.toSet());
             if (!part.isEmpty()) {
                 map.get(id).addAll(part);
@@ -94,15 +97,17 @@ public class TaskDispatcher {
         Map<Long, Set<String>> result = new HashMap<>();
         partSize = allTasks.size() / idList.size();
         int lastIndexOfTask = -1;
+        int idCount = 0;
         for (Long id : idList) {
             lastIndexOfTask++;
+            idCount++;
             result.computeIfAbsent(id, k -> new HashSet<>());
             int count = 0;
             for (int i = lastIndexOfTask; i < allTasks.size(); i++) {
                 lastIndexOfTask = i;
                 result.get(id).add(allTasks.get(i));
                 count++;
-                if (count >= partSize) {
+                if (count >= partSize && idCount != idList.size()) {
                     break;
                 }
             }
