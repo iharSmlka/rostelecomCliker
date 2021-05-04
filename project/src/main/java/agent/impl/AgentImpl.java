@@ -24,6 +24,21 @@ public class AgentImpl implements Agent {
     private SeleniumClient seleniumClient;
     private final TaskDispatcher taskDispatcher = TaskDispatcher.getInstance();
 
+    private Integer scrollSleep = 1;
+    private Integer numbsRadioPanelLoadSleep = 10;
+    private Integer sleepAfterCloseServiceManagement = 2;
+    private Integer sleepAfterClosePhoneChange = 2;
+    private Integer sleepAfterSendKeyToPhoneNumbTextBox = 1;
+    private Integer sleepAfterClickOnPhoneChange = 3;
+    private Integer sleepAfterSubmitPhoneChange = 5;
+    private Integer sleepForLoadLoginPage = 2;
+    private Integer sleepAfterLogin = 10;
+    private Integer sleepForLoadChangeNumber = 5;
+    private Integer sleepForLoadServiceManagement = 2;
+    private Integer sleepForLoadServices = 10;
+    private Integer sleepAfterChooseRow = 5;
+    private Integer sleepAfterSetPagination = 5;
+
     public AgentImpl() { }
 
     public AgentImpl(Long id, String login, String password) {
@@ -113,9 +128,9 @@ public class AgentImpl implements Agent {
                 .focus(By.id("3179985402"))
                 .focus(By.name("HTML 3"))
                 .scrollToFocus()
-                .sleepSecs(1)
+                .sleepSecs(scrollSleep)
                 .clickOnFocus()
-                .sleepSecs(10)
+                .sleepSecs(numbsRadioPanelLoadSleep)
                 .unFocus();
     }
 
@@ -130,7 +145,7 @@ public class AgentImpl implements Agent {
                 .focus(changePhoneWindow)
                 .focus(By.className("i-close"))
                 .clickOnFocus()
-                .sleepSecs(2)
+                .sleepSecs(sleepAfterCloseServiceManagement)
                 .unFocus();
     }
 
@@ -145,7 +160,7 @@ public class AgentImpl implements Agent {
                 .focus(changePhoneMenu)
                 .focus(By.className("i-close"))
                 .clickOnFocus()
-                .sleepSecs(2)
+                .sleepSecs(sleepAfterClosePhoneChange)
                 .unFocus();
     }
 
@@ -165,7 +180,7 @@ public class AgentImpl implements Agent {
                     .getElementFromFocus(By.tagName("p"));
             String msg = SeleniumUtils.getWebElementText(notifyWindowLabel);
             seleniumClient
-                    .sleepSecs(2)
+                    .sleepSecs(scrollSleep)
                     .focus(notifyDialogBox)
                     .focus(By.className("dialogMiddleCenterInner"))
                     .focus(By.className("btn-popup-close"))
@@ -192,13 +207,13 @@ public class AgentImpl implements Agent {
                     .focus(input)
                     .clearFocus()
                     .sendKeysToFocus(String.valueOf(last4Symbols.charAt(index - 1)))
-                    .sleepSecs(1);
+                    .sleepSecs(sleepAfterSendKeyToPhoneNumbTextBox);
         }
         seleniumClient.unFocus();
         seleniumClient
                 .focus(By.name("find_btn"))
                 .clickOnFocus();
-        seleniumClient.sleepSecs(10);
+        seleniumClient.sleepSecs(numbsRadioPanelLoadSleep);
         seleniumClient.unFocus();
     }
 
@@ -231,10 +246,10 @@ public class AgentImpl implements Agent {
         seleniumClient
                 .focus(input)
                 .scrollToFocus()
-                .sleepSecs(2)
+                .sleepSecs(scrollSleep)
                 .clickOnFocus()
                 .unFocus()
-                .sleepSecs(2);
+                .sleepSecs(scrollSleep);
         submitChange(seleniumClient);
     }
 
@@ -242,7 +257,7 @@ public class AgentImpl implements Agent {
         seleniumClient
                 .focus(By.name("change_phone_btn"))
                 .clickOnFocus()
-                .sleepSecs(3)
+                .sleepSecs(sleepAfterClickOnPhoneChange)
                 .unFocus();
         WebElement changePhoneWindow = seleniumClient
                 .getElementsFromFocus(By.className("uni-DialogBox"))
@@ -254,7 +269,7 @@ public class AgentImpl implements Agent {
                 .focus(changePhoneWindow)
                 .focus(By.name("btn_yes_change_phone"))
                 .clickOnFocus()
-                .sleepSecs(5)
+                .sleepSecs(sleepAfterSubmitPhoneChange)
                 .unFocus();
     }
 
@@ -271,7 +286,7 @@ public class AgentImpl implements Agent {
                 .focus(By.className("dialogMiddleCenter"))
                 .focus(By.name("html_arrow_gt"))
                 .clickOnFocus()
-                .sleepSecs(4)
+                .sleepSecs(sleepForLoadChangeNumber)
                 .unFocus();
     }
 
@@ -279,9 +294,9 @@ public class AgentImpl implements Agent {
         seleniumClient
                 .focus(By.name("Текст 23"))
                 .scrollToFocus()
-                .sleepSecs(2)
+                .sleepSecs(scrollSleep)
                 .clickOnFocus()
-                .sleepSecs(2)
+                .sleepSecs(sleepForLoadServiceManagement)
                 .unFocus();
     }
 
@@ -289,9 +304,9 @@ public class AgentImpl implements Agent {
         seleniumClient
                 .focus(row)
                 .scrollToFocus()
-                .sleepSecs(1)
+                .sleepSecs(scrollSleep)
                 .clickOnFocus()
-                .sleepSecs(5)
+                .sleepSecs(sleepAfterChooseRow)
                 .unFocus();
     }
 
@@ -301,9 +316,9 @@ public class AgentImpl implements Agent {
                 .focus(By.name("rtk-paginator"))
                 .focus(By.name("rtk-dropdown"))
                 .scrollToFocus()
-                .sleepSecs(3)
+                .sleepSecs(scrollSleep)
                 .clickOnFocus()
-                .sleepSecs(1);
+                .sleepSecs(scrollSleep);
         List<WebElement> paginationElements = seleniumClient.getElementsFromFocus(By.className("multiselect__option"));
         for (WebElement webElement : paginationElements) {
             String innerText = SeleniumUtils.getWebElementText(webElement.findElement(By.tagName("span")));
@@ -311,7 +326,7 @@ public class AgentImpl implements Agent {
                 seleniumClient
                         .focus(webElement)
                         .clickOnFocus()
-                        .sleepSecs(5);
+                        .sleepSecs(sleepAfterSetPagination);
                 break;
             }
         }
@@ -323,25 +338,25 @@ public class AgentImpl implements Agent {
                 .focus(By.name("Услуги-tab-header"))
                 .focus(By.className("tab1"))
                 .clickOnFocus()
-                .sleepSecs(10)
+                .sleepSecs(sleepForLoadServices)
                 .unFocus();
     }
 
     private void loginAndGoToStartPage(SeleniumClient seleniumClient) {
         seleniumClient
                 .get("https://client.rt.ru/")
-                .sleepSecs(2)
+                .sleepSecs(sleepForLoadLoginPage)
                 .focus(By.id("username"))
                 .sendKeysToFocus(login)
-                .sleepSecs(1)
+                .sleepSecs(sleepAfterSendKeyToPhoneNumbTextBox)
                 .unFocus()
                 .focus(By.id("password"))
                 .sendKeysToFocus(password)
-                .sleepSecs(1)
+                .sleepSecs(sleepAfterSendKeyToPhoneNumbTextBox)
                 .unFocus()
                 .focus(By.id("kc-login"))
                 .submitFocus()
-                .sleepSecs(10)
+                .sleepSecs(sleepAfterLogin)
                 .unFocus();
     }
 
