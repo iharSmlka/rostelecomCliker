@@ -47,6 +47,42 @@ public class AgentImpl implements Agent {
         this.password = password;
     }
 
+    public AgentImpl(Long id,
+                     String login,
+                     String password,
+                     Integer scrollSleep,
+                     Integer numbsRadioPanelLoadSleep,
+                     Integer sleepAfterCloseServiceManagement,
+                     Integer sleepAfterClosePhoneChange,
+                     Integer sleepAfterSendKeyToPhoneNumbTextBox,
+                     Integer sleepAfterClickOnPhoneChange,
+                     Integer sleepAfterSubmitPhoneChange,
+                     Integer sleepForLoadLoginPage,
+                     Integer sleepAfterLogin,
+                     Integer sleepForLoadChangeNumber,
+                     Integer sleepForLoadServiceManagement,
+                     Integer sleepForLoadServices,
+                     Integer sleepAfterChooseRow,
+                     Integer sleepAfterSetPagination) {
+        this.id = id;
+        this.login = login;
+        this.password = password;
+        this.scrollSleep = scrollSleep;
+        this.numbsRadioPanelLoadSleep = numbsRadioPanelLoadSleep;
+        this.sleepAfterCloseServiceManagement = sleepAfterCloseServiceManagement;
+        this.sleepAfterClosePhoneChange = sleepAfterClosePhoneChange;
+        this.sleepAfterSendKeyToPhoneNumbTextBox = sleepAfterSendKeyToPhoneNumbTextBox;
+        this.sleepAfterClickOnPhoneChange = sleepAfterClickOnPhoneChange;
+        this.sleepAfterSubmitPhoneChange = sleepAfterSubmitPhoneChange;
+        this.sleepForLoadLoginPage = sleepForLoadLoginPage;
+        this.sleepAfterLogin = sleepAfterLogin;
+        this.sleepForLoadChangeNumber = sleepForLoadChangeNumber;
+        this.sleepForLoadServiceManagement = sleepForLoadServiceManagement;
+        this.sleepForLoadServices = sleepForLoadServices;
+        this.sleepAfterChooseRow = sleepAfterChooseRow;
+        this.sleepAfterSetPagination = sleepAfterSetPagination;
+    }
+
     @Override
     public Long getId() {
         return id;
