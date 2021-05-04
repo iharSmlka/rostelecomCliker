@@ -112,10 +112,9 @@ public class AgentImpl implements Agent {
                 .focus(By.name("rtk-datagrid"))
                 .focus(By.id("vgt-table"));
         List<WebElement> rows;
-        int iterCount = 0;
         do {
             rows = seleniumClient.getElementsFromFocus(By.className("list-of-services__ListOfServices__active"));
-            if (iterCount >= rows.size()) {
+            if (!taskDispatcher.hasForChangeTask(id)) {
                 break;
             }
             WebElement row = rows.stream().filter(
@@ -155,8 +154,7 @@ public class AgentImpl implements Agent {
                 backToServicesPage(seleniumClient);
                 taskDispatcher.closeTaskForChange(id, number);
             }
-            iterCount++;
-        } while (iterCount < rows.size());
+        } while (taskDispatcher.hasForChangeTask(id));
     }
 
     private void backToServicesPage(SeleniumClient seleniumClient) {

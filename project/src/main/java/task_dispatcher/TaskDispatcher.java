@@ -55,6 +55,10 @@ public class TaskDispatcher {
         getTaskToChangeLock.unlock();
     }
 
+    public boolean hasForChangeTask(Long id) {
+        return forChangeTasks.get(id).size() > 0;
+    }
+
     public boolean isForChangeTask(Long id, String value) {
         return forChangeTasks.get(id).contains(value);
     }
