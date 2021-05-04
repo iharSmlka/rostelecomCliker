@@ -1,6 +1,8 @@
 package agent.impl;
 
 import agent.Agent;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import selenium_utils.SeleniumClient;
@@ -14,6 +16,8 @@ import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+@Getter
+@Slf4j
 public class AgentImpl implements Agent {
 
     private static final Lock lockForChooseNumber = new ReentrantLock();
@@ -39,6 +43,8 @@ public class AgentImpl implements Agent {
     private Integer sleepAfterChooseRow = 5;
     private Integer sleepAfterSetPagination = 5;
 
+    private Integer errorLimit = 10;
+
     public AgentImpl() { }
 
     public AgentImpl(Long id, String login, String password) {
@@ -63,7 +69,8 @@ public class AgentImpl implements Agent {
                      Integer sleepForLoadServiceManagement,
                      Integer sleepForLoadServices,
                      Integer sleepAfterChooseRow,
-                     Integer sleepAfterSetPagination) {
+                     Integer sleepAfterSetPagination,
+                     Integer errorLimit) {
         this.id = id;
         this.login = login;
         this.password = password;
@@ -81,26 +88,29 @@ public class AgentImpl implements Agent {
         this.sleepForLoadServices = sleepForLoadServices;
         this.sleepAfterChooseRow = sleepAfterChooseRow;
         this.sleepAfterSetPagination = sleepAfterSetPagination;
-    }
-
-    @Override
-    public Long getId() {
-        return id;
+        this.errorLimit = errorLimit;
     }
 
     @Override
     public void run() {
-        logic();
+        logic(0);
+        endSession(seleniumClient);
     }
 
-    private void logic() {
+    private void logic(int count) {
+        if (count >= errorLimit) {
+            log.error("Вышли в лимит");
+            return;
+        }
         try {
             seleniumClient = new SeleniumClientImpl();
             loginAndGoToStartPage(seleniumClient);
             goToServices(seleniumClient);
             setPagination(seleniumClient);
             changeNumbersCycle(seleniumClient);
-        } finally {
+        } catch (Exception e) {
+            log.error("Ошибка ", e);
+            logic(count + 1);
             endSession(seleniumClient);
         }
     }
@@ -136,7 +146,6 @@ public class AgentImpl implements Agent {
                         setLastFourSymbolsFromTaskToChange(seleniumClient, numberToChange);
                         String changed = chooseNumberAndSubmit(seleniumClient, numberToChange);
                         if (changed == null || !checkChangeIsSuccessfulAndCloseWindows(seleniumClient)) {
-                            System.err.println("un-success");
                             isChangeError = true;
                         } else {
                             taskDispatcher.addToChangelog(number, changed);
@@ -221,7 +230,7 @@ public class AgentImpl implements Agent {
                     .clickOnFocus();
             return msg != null && msg.contains("Номер изменен");
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+            log.error("Ошибка при проверке статуса смены ", e);
             return false;
         } finally {
             seleniumClient.unFocus();
@@ -395,6 +404,10 @@ public class AgentImpl implements Agent {
     }
 
     private void endSession(SeleniumClient seleniumClient) {
-        seleniumClient.close();
+        try {
+            seleniumClient.close();
+        } catch (Exception e) {
+            log.error("Ошибка закрытия браузера ", e);
+        }
     }
 }

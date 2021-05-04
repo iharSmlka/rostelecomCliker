@@ -75,10 +75,6 @@ public class TaskDispatcher {
         return toChangeTasks.get(id).stream().findFirst().orElse(null);
     }
 
-    public String getTaskForChange(Long id) {
-        return forChangeTasks.get(id).stream().findFirst().orElse(null);
-    }
-
     private void reDistributeFor(Long id, Map<Long, Set<String>> map) {
         int currentLoad = map.values().stream().map(Set::size).reduce(Integer::sum).orElse(0);
         if (currentLoad == 0) {

@@ -163,7 +163,8 @@ public class SessionController {
                     sleepForLoadServiceManagement,
                     sleepForLoadServices,
                     sleepAfterChooseRow,
-                    sleepAfterSetPagination);
+                    sleepAfterSetPagination,
+                    10);
             result.add(agent);
         }
         return result;
