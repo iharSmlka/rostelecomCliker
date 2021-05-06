@@ -71,6 +71,10 @@ public class TaskDispatcher {
         changelog.put(from, to);
     }
 
+    public Map<String, String> getChangelog() {
+        return changelog;
+    }
+
     public String getTaskToChange(Long id) {
         return toChangeTasks.get(id).stream().findFirst().orElse(null);
     }
