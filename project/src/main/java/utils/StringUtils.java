@@ -6,14 +6,8 @@ public class StringUtils {
         if (string == null || string.length() <= 1) {
             return "";
         }
-        String val = string.charAt(0) == '7' ? string.substring(1) : string;
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < val.length(); i++) {
-            if (Character.isDigit(val.charAt(i))) {
-                builder.append(val.charAt(i));
-            }
-        }
-        return builder.toString();
+        String val = getOnlyNumbs(string);
+        return val.charAt(0) == '7' ? val.substring(1) : val;
     }
 
     public static String getLastFourNumbs(String string) {
@@ -24,5 +18,15 @@ public class StringUtils {
             return string;
         }
         return string.substring(string.length() - 4);
+    }
+
+    private static String getOnlyNumbs(String str) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            if (Character.isDigit(str.charAt(i))) {
+                builder.append(str.charAt(i));
+            }
+        }
+        return builder.toString();
     }
 }
