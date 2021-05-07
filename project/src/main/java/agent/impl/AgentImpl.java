@@ -44,6 +44,7 @@ public class AgentImpl implements Agent {
     private Integer sleepAfterSetPagination = 5;
 
     private Integer errorLimit = 10;
+    private Integer unSuccessLimit = 3;
 
     public AgentImpl() { }
 
@@ -154,7 +155,7 @@ public class AgentImpl implements Agent {
                         boolean isSuccess = checkChangeIsSuccessfulAndCloseWindows(seleniumClient);
                         if (changed == null || !isSuccess) {
                             taskDispatcher.addUnSuccessToChange(numberToChange);
-                            if (!isSuccess) {
+                            if (!(taskDispatcher.countOfUnSuccessToChange(numberToChange) >= unSuccessLimit)) {
                                 throw new RestartException();
                             }
                             isChangeError = true;
@@ -293,7 +294,7 @@ public class AgentImpl implements Agent {
             return null;
         } catch (Exception e) {
             log.error("Ошибка при попытке смены номера ", e);
-            throw new RestartException();
+            return null;
         } finally {
             seleniumClient.unFocus();
             lockForChooseNumber.unlock();
