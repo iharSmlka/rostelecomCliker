@@ -14,6 +14,7 @@ public class TaskDispatcher {
     private Map<Long, Set<String>> toChangeTasks = new HashMap<>();
     private final Map<String, String> changelog = new HashMap<>();
     private final Set<String> toChangeSet = new HashSet<>();
+    private final Set<String> unSuccessToChangeSet = new HashSet<>();
     private final Lock getTaskForChangeLock = new ReentrantLock();
     private final Lock getTaskToChangeLock = new ReentrantLock();
     private boolean changeToMode = false;
@@ -125,10 +126,19 @@ public class TaskDispatcher {
         return toChangeSet;
     }
 
+    public void addUnSuccessToChange(String toChange) {
+        unSuccessToChangeSet.add(toChange);
+    }
+
+    public Set<String> getUnSuccessToChangeSet() {
+        return unSuccessToChangeSet;
+    }
+
     private void clearTasks() {
         forChangeTasks.clear();
         toChangeTasks.clear();
         toChangeSet.clear();
+        unSuccessToChangeSet.clear();
         partSize = 0;
     }
 }

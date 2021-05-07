@@ -95,8 +95,10 @@ public class SessionController {
         Set<String> toChangeSet = TaskDispatcher.getInstance().getToChangeSet();
         Map<String, String> changelog = TaskDispatcher.getInstance().getChangelog();
         Set<String> changed = new HashSet<>(changelog.values());
+        Set<String> erred = TaskDispatcher.getInstance().getUnSuccessToChangeSet();
         Set<String> notChanged = new HashSet<>(toChangeSet);
         notChanged.removeAll(changed);
+        notChanged.removeAll(erred);
         StringBuilder result = new StringBuilder();
         for (String str : notChanged) {
             result.append(str).append("\n");

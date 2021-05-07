@@ -112,8 +112,8 @@ public class AgentImpl implements Agent {
             changeNumbersCycle(seleniumClient);
         } catch (Exception e) {
             log.error("Ошибка ", e);
-            logic(count + 1);
             endSession(seleniumClient);
+            logic(count + 1);
         }
     }
 
@@ -149,6 +149,7 @@ public class AgentImpl implements Agent {
                         String changed = chooseNumberAndSubmit(seleniumClient, numberToChange);
                         if (changed == null || !checkChangeIsSuccessfulAndCloseWindows(seleniumClient)) {
                             isChangeError = true;
+                            taskDispatcher.addUnSuccessToChange(numberToChange);
                         } else {
                             taskDispatcher.addToChangelog(number, changed);
                         }
@@ -156,8 +157,10 @@ public class AgentImpl implements Agent {
                     } while (isChangeError);
                 } else {
                     String changed = chooseNumberAndSubmit(seleniumClient, null);
-                    if (checkChangeIsSuccessfulAndCloseWindows(seleniumClient)) {
-                        taskDispatcher.addToChangelog(number, changed);
+                    if (changed != null) {
+                        if (checkChangeIsSuccessfulAndCloseWindows(seleniumClient)) {
+                            taskDispatcher.addToChangelog(number, changed);
+                        }
                     }
                 }
                 closeChangeNumberMenu(seleniumClient);
@@ -279,6 +282,9 @@ public class AgentImpl implements Agent {
                     return phoneFromLabel;
                 }
             }
+            return null;
+        } catch (Exception e) {
+            log.error("Ошибка при попытке смены номера ", e);
             return null;
         } finally {
             seleniumClient.unFocus();
