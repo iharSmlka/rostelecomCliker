@@ -45,6 +45,8 @@ public class AgentImpl implements Agent {
 
     private Integer errorLimit = 10;
 
+    private boolean close = false;
+
     public AgentImpl() { }
 
     public AgentImpl(Long id, String login, String password) {
@@ -98,7 +100,7 @@ public class AgentImpl implements Agent {
     }
 
     private void logic(int count) {
-        if (count >= errorLimit) {
+        if (count >= errorLimit || close) {
             log.error("Вышли в лимит");
             return;
         }
@@ -128,11 +130,11 @@ public class AgentImpl implements Agent {
                 break;
             }
             WebElement row = rows.stream().filter(
-                    r -> taskDispatcher.isForChangeTask(id, StringUtils.getOnlyNumbs(SeleniumUtils.getWebElementText(r))))
+                    r -> taskDispatcher.isForChangeTask(id, StringUtils.getPhoneNumb(SeleniumUtils.getWebElementText(r))))
                     .findAny()
                     .orElse(null);
             if (row != null) {
-                String number = StringUtils.getOnlyNumbs(SeleniumUtils.getWebElementText(row));
+                String number = StringUtils.getPhoneNumb(SeleniumUtils.getWebElementText(row));
                 choosePhoneRow(row, seleniumClient);
                 goToServiceManagementWindow(seleniumClient);
                 goToChangeNumberMenu(seleniumClient);
@@ -162,6 +164,8 @@ public class AgentImpl implements Agent {
                 closeServiceManagementWindow(seleniumClient);
                 backToServicesPage(seleniumClient);
                 taskDispatcher.closeTaskForChange(id, number);
+            } else {
+                break;
             }
         } while (taskDispatcher.hasForChangeTask(id));
     }
@@ -320,7 +324,7 @@ public class AgentImpl implements Agent {
         WebElement phoneLabel = seleniumClient
                 .focus(radio)
                 .getElementFromFocus(By.className("c-field-label"));
-        return StringUtils.getOnlyNumbs(SeleniumUtils.getWebElementText(phoneLabel));
+        return StringUtils.getPhoneNumb(SeleniumUtils.getWebElementText(phoneLabel));
     }
 
 

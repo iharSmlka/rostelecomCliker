@@ -7,14 +7,8 @@ import selenium_utils.impl.WebDriverCreator;
 import task_dispatcher.TaskDispatcher;
 import utils.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.io.*;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SessionController {
@@ -45,20 +39,23 @@ public class SessionController {
 
     private static SessionController instance = new SessionController();
     private List<Agent> agents = new ArrayList<>();
+    private String toChangeFilePath = null;
 
     public static SessionController getInstance() {
         return instance;
     }
 
     public void startSession(int agentsCount, String login, String password, String forChangeNumbsFilePath, String toChangeNumbsFilePath) {
+        toChangeFilePath = null;
         if (forChangeNumbsFilePath == null || forChangeNumbsFilePath.isEmpty() || agentsCount == 0) {
             return;
         }
         setParams("params.txt");
         List<Agent> agents = createAgents(agentsCount, login, password);
-        List<String> forChange = getLinesFromFile(forChangeNumbsFilePath).stream().map(StringUtils::getOnlyNumbs).collect(Collectors.toList());
+        List<String> forChange = getLinesFromFile(forChangeNumbsFilePath).stream().map(StringUtils::getPhoneNumb).collect(Collectors.toList());
         if (toChangeNumbsFilePath != null && !toChangeNumbsFilePath.isEmpty()) {
-            List<String> toChange = getLinesFromFile(toChangeNumbsFilePath).stream().map(StringUtils::getOnlyNumbs).collect(Collectors.toList());
+            toChangeFilePath = toChangeNumbsFilePath;
+            List<String> toChange = getLinesFromFile(toChangeNumbsFilePath).stream().map(StringUtils::getPhoneNumb).collect(Collectors.toList());
             TaskDispatcher.getInstance().addTasks(forChange, toChange, agents);
         } else {
             TaskDispatcher.getInstance().addTasks(forChange, agents);
@@ -89,6 +86,22 @@ public class SessionController {
             result.append(key).append(" -> ").append(changelog.get(key)).append("\n");
         }
         createFileWithText(UUID.randomUUID().toString(), result.toString());
+    }
+
+    public void rewriteToChangeFile() throws Exception {
+        if (toChangeFilePath == null) {
+            return;
+        }
+        Set<String> toChangeSet = TaskDispatcher.getInstance().getToChangeSet();
+        Map<String, String> changelog = TaskDispatcher.getInstance().getChangelog();
+        Set<String> changed = new HashSet<>(changelog.values());
+        Set<String> notChanged = new HashSet<>(toChangeSet);
+        notChanged.removeAll(changed);
+        StringBuilder result = new StringBuilder();
+        for (String str : notChanged) {
+            result.append(str).append("\n");
+        }
+        reWriteFile(toChangeFilePath, result.toString());
     }
 
     private void joinThreads(List<Thread> threads) {
@@ -160,6 +173,13 @@ public class SessionController {
             try (FileWriter myWriter = new FileWriter(newFile)) {
                 myWriter.write(text);
             }
+        }
+    }
+
+    private void reWriteFile(String filePath, String text) throws Exception {
+        File file = new File(filePath);
+        try (FileWriter writer = new FileWriter(file, false)) {
+            writer.write(text);
         }
     }
 }

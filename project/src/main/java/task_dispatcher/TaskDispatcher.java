@@ -12,7 +12,8 @@ public class TaskDispatcher {
     private static final TaskDispatcher instance = new TaskDispatcher();
     private Map<Long, Set<String>> forChangeTasks = new HashMap<>();
     private Map<Long, Set<String>> toChangeTasks = new HashMap<>();
-    private Map<String, String> changelog = new HashMap<>();
+    private final Map<String, String> changelog = new HashMap<>();
+    private final Set<String> toChangeSet = new HashSet<>();
     private final Lock getTaskForChangeLock = new ReentrantLock();
     private final Lock getTaskToChangeLock = new ReentrantLock();
     private boolean changeToMode = false;
@@ -35,6 +36,7 @@ public class TaskDispatcher {
         clearTasks();
         forChangeTasks = distribute(agents.stream().map(Agent::getId).collect(Collectors.toList()), tasksForChange);
         toChangeTasks = distribute(agents.stream().map(Agent::getId).collect(Collectors.toList()), tasksToChange);
+        toChangeSet.addAll(tasksToChange);
     }
 
     public void closeTaskForChange(Long id, String task) {
@@ -119,10 +121,14 @@ public class TaskDispatcher {
         return result;
     }
 
+    public Set<String> getToChangeSet() {
+        return toChangeSet;
+    }
+
     private void clearTasks() {
         forChangeTasks.clear();
         toChangeTasks.clear();
-        changelog.clear();
+        toChangeSet.clear();
         partSize = 0;
     }
 }

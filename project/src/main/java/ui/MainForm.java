@@ -22,6 +22,31 @@ public class MainForm extends JFrame {
     private JPanel Content;
     private JButton logBtn;
 
+    private class Worker extends Thread {
+
+        @Override
+        public void run() {
+            try {
+                SessionController.getInstance().startSession(
+                        Integer.parseInt(agentsCountBox.getText()),
+                        LoginBox.getText(),
+                        passwordBox.getText(),
+                        forChangeBox.getText(),
+                        toChangeBox.getText()
+                );
+                JOptionPane.showMessageDialog(null, "Закончено", "Info", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(null, ex.getMessage(), "Error", JOptionPane.INFORMATION_MESSAGE);
+            } finally {
+                try {
+                    SessionController.getInstance().rewriteToChangeFile();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, ex.getMessage(), "File Error", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        }
+    }
+
     public MainForm() {
         this.setContentPane(Content);
         setTitle("Main");
@@ -40,18 +65,8 @@ public class MainForm extends JFrame {
         okBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    SessionController.getInstance().startSession(
-                            Integer.parseInt(agentsCountBox.getText()),
-                            LoginBox.getText(),
-                            passwordBox.getText(),
-                            forChangeBox.getText(),
-                            toChangeBox.getText()
-                                    );
-                    JOptionPane.showMessageDialog(null, "Закончено", "Info", JOptionPane.INFORMATION_MESSAGE);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, ex.getMessage(), "Error", JOptionPane.INFORMATION_MESSAGE);
-                }
+                Worker worker = new Worker();
+                worker.start();
             }
         });
         forChangeBtnChoose.addActionListener(new ActionListener() {
@@ -74,7 +89,6 @@ public class MainForm extends JFrame {
                 } catch (Exception exception) {
                     log.error("Ошибка записи лога ", exception);
                     JOptionPane.showMessageDialog(null, exception.getMessage(), "Error", JOptionPane.INFORMATION_MESSAGE);
-
                 }
             }
         });
