@@ -45,8 +45,6 @@ public class AgentImpl implements Agent {
 
     private Integer errorLimit = 10;
 
-    private boolean close = false;
-
     public AgentImpl() { }
 
     public AgentImpl(Long id, String login, String password) {
@@ -100,7 +98,7 @@ public class AgentImpl implements Agent {
     }
 
     private void logic(int count) {
-        if (count >= errorLimit || close) {
+        if (count >= errorLimit) {
             log.error("Вышли в лимит");
             return;
         }
@@ -111,6 +109,12 @@ public class AgentImpl implements Agent {
             setPagination(seleniumClient);
             changeNumbersCycle(seleniumClient);
         } catch (Exception e) {
+            if (e instanceof RestartException) {
+                log.error("Restart");
+                endSession(seleniumClient);
+                logic(count);
+                return;
+            }
             log.error("Ошибка ", e);
             endSession(seleniumClient);
             logic(count + 1);
@@ -147,9 +151,13 @@ public class AgentImpl implements Agent {
                         }
                         setLastFourSymbolsFromTaskToChange(seleniumClient, numberToChange);
                         String changed = chooseNumberAndSubmit(seleniumClient, numberToChange);
-                        if (changed == null || !checkChangeIsSuccessfulAndCloseWindows(seleniumClient)) {
-                            isChangeError = true;
+                        boolean isSuccess = checkChangeIsSuccessfulAndCloseWindows(seleniumClient);
+                        if (changed == null || !isSuccess) {
                             taskDispatcher.addUnSuccessToChange(numberToChange);
+                            if (!isSuccess) {
+                                throw new RestartException();
+                            }
+                            isChangeError = true;
                         } else {
                             taskDispatcher.addToChangelog(number, changed);
                         }
@@ -285,7 +293,7 @@ public class AgentImpl implements Agent {
             return null;
         } catch (Exception e) {
             log.error("Ошибка при попытке смены номера ", e);
-            return null;
+            throw new RestartException();
         } finally {
             seleniumClient.unFocus();
             lockForChooseNumber.unlock();
