@@ -4,6 +4,7 @@ import agent.Agent;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import selenium_utils.SeleniumClient;
 import selenium_utils.impl.SeleniumClientImpl;
@@ -135,11 +136,15 @@ public class AgentImpl implements Agent {
                 break;
             }
             WebElement row = rows.stream().filter(
-                    r -> taskDispatcher.isForChangeTask(id, StringUtils.getPhoneNumb(SeleniumUtils.getWebElementText(r))))
+                    r -> taskDispatcher.isForChangeTask(id, StringUtils.getPhoneNumb(SeleniumUtils.getWebElementText(r)))
+                            || taskDispatcher.possiblySuccess(id, SeleniumUtils.getWebElementText(r)))
                     .findAny()
-                    .orElse(null);
+                    .orElse(null); // мб лучше повторять это в конце?
             if (row != null) {
                 String number = StringUtils.getPhoneNumb(SeleniumUtils.getWebElementText(row));
+                if (taskDispatcher.possiblySuccess(id, number)) {
+                    taskDispatcher.reStore(id, number);
+                }
                 choosePhoneRow(row, seleniumClient);
                 goToServiceManagementWindow(seleniumClient);
                 goToChangeNumberMenu(seleniumClient);
@@ -152,10 +157,9 @@ public class AgentImpl implements Agent {
                         }
                         setLastFourSymbolsFromTaskToChange(seleniumClient, numberToChange);
                         String changed = chooseNumberAndSubmit(seleniumClient, numberToChange);
-                        boolean isSuccess = checkChangeIsSuccessfulAndCloseWindows(seleniumClient);
-                        if (changed == null || !isSuccess) {
+                        if (changed == null || Objects.equals(changed, "ERR")) {
                             taskDispatcher.addUnSuccessToChange(numberToChange);
-                            if (!(taskDispatcher.countOfUnSuccessToChange(numberToChange) >= unSuccessLimit)) {
+                            if (Objects.equals(changed, "ERR") && !(taskDispatcher.countOfUnSuccessToChange(numberToChange) >= unSuccessLimit)) {
                                 throw new RestartException();
                             }
                             isChangeError = true;
@@ -167,9 +171,7 @@ public class AgentImpl implements Agent {
                 } else {
                     String changed = chooseNumberAndSubmit(seleniumClient, null);
                     if (changed != null) {
-                        if (checkChangeIsSuccessfulAndCloseWindows(seleniumClient)) {
-                            taskDispatcher.addToChangelog(number, changed);
-                        }
+                        taskDispatcher.addToChangelog(number, changed);
                     }
                 }
                 closeChangeNumberMenu(seleniumClient);
@@ -223,36 +225,6 @@ public class AgentImpl implements Agent {
                 .unFocus();
     }
 
-    private boolean checkChangeIsSuccessfulAndCloseWindows(SeleniumClient seleniumClient) {
-        try {
-            WebElement notifyDialogBox = seleniumClient
-                    .getElementsFromFocus(By.className("uni-DialogBox"))
-                    .stream()
-                    .filter(e -> Objects.equals(e.getAttribute("source"), "unknown"))
-                    .findAny()
-                    .orElse(null);
-            seleniumClient
-                    .focus(notifyDialogBox)
-                    .focus(By.className("dialogMiddleCenterInner"));
-            WebElement notifyWindowLabel = seleniumClient
-                    .focus(By.name("unidialogMessage"))
-                    .getElementFromFocus(By.tagName("p"));
-            String msg = SeleniumUtils.getWebElementText(notifyWindowLabel);
-            seleniumClient
-                    .sleepSecs(scrollSleep)
-                    .focus(notifyDialogBox)
-                    .focus(By.className("dialogMiddleCenterInner"))
-                    .focus(By.className("btn-popup-close"))
-                    .clickOnFocus();
-            return msg != null && msg.contains("Номер изменен");
-        } catch (Exception e) {
-            log.error("Ошибка при проверке статуса смены ", e);
-            return false;
-        } finally {
-            seleniumClient.unFocus();
-        }
-    }
-
     private void setLastFourSymbolsFromTaskToChange(SeleniumClient seleniumClient, String taskToChange) {
         String last4Symbols = StringUtils.getLastFourNumbs(taskToChange);
         List<WebElement> inputDivList = seleniumClient
@@ -294,9 +266,10 @@ public class AgentImpl implements Agent {
             return null;
         } catch (Exception e) {
             log.error("Ошибка при попытке смены номера ", e);
-            return null;
+            return "ERR";
         } finally {
-            seleniumClient.unFocus();
+            seleniumClient
+                    .unFocus();
             lockForChooseNumber.unlock();
         }
     }

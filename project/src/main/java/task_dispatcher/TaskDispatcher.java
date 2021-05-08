@@ -12,6 +12,9 @@ public class TaskDispatcher {
     private static final TaskDispatcher instance = new TaskDispatcher();
     private Map<Long, Set<String>> forChangeTasks = new HashMap<>();
     private Map<Long, Set<String>> toChangeTasks = new HashMap<>();
+
+    private final Map<Long, Set<String>> successForChangeSet = new HashMap<>();
+
     private final Map<String, String> changelog = new HashMap<>();
     private final Set<String> toChangeSet = new HashSet<>();
     private final Map<String, Integer> unSuccessToChangeSet = new HashMap<>();
@@ -42,9 +45,29 @@ public class TaskDispatcher {
 
     public void closeTaskForChange(Long id, String task) {
         getTaskForChangeLock.lock();
+        successForChangeSet.computeIfAbsent(id, k -> new HashSet<>());
+        successForChangeSet.get(id).add(task);
         forChangeTasks.get(id).remove(task);
         if (forChangeTasks.get(id).isEmpty()) {
             reDistributeFor(id, forChangeTasks);
+        }
+        getTaskForChangeLock.unlock();
+    }
+
+    public boolean possiblySuccess(Long id, String task) {
+        if (successForChangeSet.get(id) == null) {
+            return false;
+        }
+        return successForChangeSet.get(id).contains(task);
+    }
+
+    public void reStore(Long id, String number) {
+        getTaskForChangeLock.lock();
+        forChangeTasks.get(id).add(number);
+        String newNumb = changelog.get(number);
+        if (newNumb != null && changeToMode) {
+            toChangeTasks.get(id).add(newNumb);
+            changelog.remove(number);
         }
         getTaskForChangeLock.unlock();
     }
@@ -144,6 +167,7 @@ public class TaskDispatcher {
         toChangeTasks.clear();
         toChangeSet.clear();
         unSuccessToChangeSet.clear();
+        successForChangeSet.clear();
         partSize = 0;
     }
 }
